@@ -28,7 +28,7 @@ api_provider = st.sidebar.selectbox(
 # Dynamic Token Inputs depending on provider
 if api_provider == "Google Gemini":
     api_key = st.sidebar.text_input("Enter Gemini API Key", type="password", help="Get a free key from Google AI Studio")
-    model_name = "gemini-2.5-flash"
+    model_name = "gemini-2.0-flash"
 else:
     api_key = st.sidebar.text_input("Enter Hugging Face Token", type="password", help="Get a free token from HF settings")
     model_name = st.sidebar.selectbox(
