@@ -131,7 +131,7 @@ def generate_application_code(prompt, provider, token, p_type):
 # -----------------------------------------------------------------------------
 # 4. CHAT INTERFACE & GENERATION CONTROL (LEFT COLUMN)
 # -----------------------------------------------------------------------------
-col_left, col_right = st.columns()
+col_left, col_right = st.columns(2)
 
 with col_left:
     st.header("💬 AI App Builder Studio")
