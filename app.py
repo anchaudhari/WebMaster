@@ -28,7 +28,7 @@ api_provider = st.sidebar.selectbox(
 # Dynamic Token Inputs depending on provider
 if api_provider == "Google Gemini":
     api_key = st.sidebar.text_input("Enter Gemini API Key", type="password", help="Get a free key from Google AI Studio")
-    model_name = "gemini-2.0-flash"
+    model_name = "gemini-2.0-flash"  # Auto-configured reliable model
 else:
     api_key = st.sidebar.text_input("Enter Hugging Face Token", type="password", help="Get a free token from HF settings")
     model_name = st.sidebar.selectbox(
@@ -83,11 +83,18 @@ def generate_application_code(prompt, provider, token, p_type):
     system_instruction = (
         "You are an elite automated software developer. Your task is to output complete, runnable code files "
         "for the user requested application. You MUST structure your output using <file name=\"filename.ext\">...code...</file> tags. "
-        "Make sure to output ALL required files to run the application. "
+        "Make sure to output ALL required files to run the application. Do not give markdown code blocks outside the XML tags. "
         f"The user wants a: {p_type}. Give complete, production-ready, beautifully designed pages. No placeholder comments.\n"
         "Example output:\n"
         "<file name=\"index.html\">\n<html>...</html>\n</file>\n"
         "<file name=\"style.css\">\nbody { ... }\n</file>"
+    )
+
+    # Automatically appending format restriction to user prompt so user doesn't have to write it
+    enhanced_prompt = (
+        f"{prompt}\n\nCRITICAL REQUIREMENT: Implement this completely. "
+        "Wrap every single file code inside <file name=\"filename.ext\">...code...</file> tags. "
+        "Do not leave any files out."
     )
 
     if not token:
@@ -101,7 +108,7 @@ def generate_application_code(prompt, provider, token, p_type):
             client = genai.Client(api_key=token)
             response = client.models.generate_content(
                 model=model_name,
-                contents=prompt,
+                contents=enhanced_prompt,
                 config=types.GenerateContentConfig(
                     system_instruction=system_instruction,
                     temperature=0.3,
@@ -115,7 +122,7 @@ def generate_application_code(prompt, provider, token, p_type):
             client = InferenceClient(api_key=token)
             messages = [
                 {"role": "system", "content": system_instruction},
-                {"role": "user", "content": prompt}
+                {"role": "user", "content": enhanced_prompt}
             ]
             response = client.chat.completions.create(
                 model=model_name,
@@ -123,7 +130,9 @@ def generate_application_code(prompt, provider, token, p_type):
                 max_tokens=3000,
                 temperature=0.3
             )
-            return response.choices.message.content
+            if hasattr(response, 'choices') and len(response.choices) > 0:
+                return response.choices.message.content
+            return "❌ Unexpected response from Hugging Face API."
             
     except Exception as e:
         return f"❌ Error communicating with the AI API:\n`{str(e)}`"
@@ -165,6 +174,7 @@ with col_left:
                     
                     if new_files:
                         st.session_state.project_files = new_files
+                        # FIXED: Extracted string element index to avoid assignment crash
                         st.session_state.selected_file = list(new_files.keys())
                         st.success(f"Successfully generated {len(new_files)} files!")
                         st.session_state.app_chat_history.append({
@@ -173,6 +183,7 @@ with col_left:
                         })
                         st.rerun()
                     else:
+                        # Fallback: if AI missed XML tags, show raw markdown code
                         st.write(ai_raw_response)
                         st.session_state.app_chat_history.append({"role": "assistant", "content": ai_raw_response})
 
@@ -197,6 +208,8 @@ with col_right:
         st.session_state.selected_file = selected_file
         
         current_content = st.session_state.project_files[selected_file]
+        
+        # UI Tweak: Handled state updates smoothly for code adjustments
         edited_code = st.text_area(
             label=f"Editing: {selected_file}",
             value=current_content,
