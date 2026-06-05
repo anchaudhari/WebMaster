@@ -1,6 +1,7 @@
 import io
 import re
 import sys
+import time
 import zipfile
 import streamlit as st
 import streamlit.components.v1 as components
@@ -76,10 +77,10 @@ def parse_ai_response_to_files(ai_text):
     return parsed_files
 
 # -----------------------------------------------------------------------------
-# 3. AI CALL UTILITIES
+# 3. AI CALL UTILITIES WITH ACCURATE RATE-LIMIT RETRIES
 # -----------------------------------------------------------------------------
 def generate_application_code(prompt, provider, token, p_type):
-    """Instructs LLM to write complete multi-file structures inside special XML wrappers."""
+    """Instructs LLM to write complete multi-file structures with built-in 429 error handling."""
     system_instruction = (
         "You are an elite automated software developer. Your task is to output complete, runnable code files "
         "for the user requested application. You MUST structure your output using <file name=\"filename.ext\">...code...</file> tags. "
@@ -90,7 +91,6 @@ def generate_application_code(prompt, provider, token, p_type):
         "<file name=\"style.css\">\nbody { ... }\n</file>"
     )
 
-    # Automatically appending format restriction to user prompt so user doesn't have to write it
     enhanced_prompt = (
         f"{prompt}\n\nCRITICAL REQUIREMENT: Implement this completely. "
         "Wrap every single file code inside <file name=\"filename.ext\">...code...</file> tags. "
@@ -100,42 +100,63 @@ def generate_application_code(prompt, provider, token, p_type):
     if not token:
         return "⚠️ Please enter your API key/token in the sidebar to talk to the AI."
 
-    try:
-        if provider == "Google Gemini":
-            from google import genai
-            from google.genai import types
-            
-            client = genai.Client(api_key=token)
-            response = client.models.generate_content(
-                model=model_name,
-                contents=enhanced_prompt,
-                config=types.GenerateContentConfig(
-                    system_instruction=system_instruction,
-                    temperature=0.3,
+    # Max retries configuration for Rate Limits
+    max_retries = 3
+    initial_delay = 4  # seconds
+
+    for attempt in range(max_retries):
+        try:
+            if provider == "Google Gemini":
+                from google import genai
+                from google.genai import types
+                
+                client = genai.Client(api_key=token)
+                response = client.models.generate_content(
+                    model=model_name,
+                    contents=enhanced_prompt,
+                    config=types.GenerateContentConfig(
+                        system_instruction=system_instruction,
+                        temperature=0.3,
+                    )
                 )
-            )
-            return response.text
-            
-        elif provider == "Hugging Face":
-            from huggingface_hub import InferenceClient
-            
-            client = InferenceClient(api_key=token)
-            messages = [
-                {"role": "system", "content": system_instruction},
-                {"role": "user", "content": enhanced_prompt}
-            ]
-            response = client.chat.completions.create(
-                model=model_name,
-                messages=messages,
-                max_tokens=3000,
-                temperature=0.3
-            )
-            if hasattr(response, 'choices') and len(response.choices) > 0:
-                return response.choices.message.content
-            return "❌ Unexpected response from Hugging Face API."
-            
-    except Exception as e:
-        return f"❌ Error communicating with the AI API:\n`{str(e)}`"
+                return response.text
+                
+            elif provider == "Hugging Face":
+                from huggingface_hub import InferenceClient
+                
+                client = InferenceClient(api_key=token)
+                messages = [
+                    {"role": "system", "content": system_instruction},
+                    {"role": "user", "content": enhanced_prompt}
+                ]
+                response = client.chat.completions.create(
+                    model=model_name,
+                    messages=messages,
+                    max_tokens=3000,
+                    temperature=0.3
+                )
+                if hasattr(response, 'choices') and len(response.choices) > 0:
+                    return response.choices.message.content
+                return "❌ Unexpected response from Hugging Face API."
+                
+        except Exception as e:
+            err_msg = str(e)
+            # Check if the error is a 429 rate limit issue
+            if "429" in err_msg or "RESOURCE_EXHAUSTED" in err_msg:
+                if attempt < max_retries - 1:
+                    # Informative sleep that increases dynamically
+                    time.sleep(initial_delay * (attempt + 1))
+                    continue
+                else:
+                    return (
+                        "⚠️ **Gemini Free-Tier Limit Reached (429 Resource Exhausted)**\n\n"
+                        "You have temporarily maxed out your free API quota. Please try one of the following:\n"
+                        "1. Wait 10-15 seconds and try sending your request again.\n"
+                        "2. Switch your provider to **Hugging Face** in the sidebar.\n"
+                        "3. Set up a billing account on Google AI Studio to unlock higher tier limits."
+                    )
+            # Catch all other errors
+            return f"❌ Error communicating with the AI API:\n`{err_msg}`"
 
 # -----------------------------------------------------------------------------
 # 4. CHAT INTERFACE & GENERATION CONTROL (LEFT COLUMN)
@@ -168,13 +189,12 @@ with col_left:
         
         with chat_container:
             with st.chat_message("assistant"):
-                with st.spinner("Engineering your application code... 🛠️"):
+                with st.spinner("Engineering your application code... 🛠️ (Will auto-retry if rate limits are hit)"):
                     ai_raw_response = generate_application_code(user_prompt, api_provider, api_key, project_type)
                     new_files = parse_ai_response_to_files(ai_raw_response)
                     
                     if new_files:
                         st.session_state.project_files = new_files
-                        # FIXED: Extracted string element index to avoid assignment crash
                         st.session_state.selected_file = list(new_files.keys())
                         st.success(f"Successfully generated {len(new_files)} files!")
                         st.session_state.app_chat_history.append({
@@ -183,7 +203,6 @@ with col_left:
                         })
                         st.rerun()
                     else:
-                        # Fallback: if AI missed XML tags, show raw markdown code
                         st.write(ai_raw_response)
                         st.session_state.app_chat_history.append({"role": "assistant", "content": ai_raw_response})
 
@@ -209,7 +228,6 @@ with col_right:
         
         current_content = st.session_state.project_files[selected_file]
         
-        # UI Tweak: Handled state updates smoothly for code adjustments
         edited_code = st.text_area(
             label=f"Editing: {selected_file}",
             value=current_content,
