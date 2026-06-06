@@ -38,7 +38,7 @@ st.markdown("""
 # MASTER API CONFIGURATION (તમારી સાચી API કી અહીં સેટ કરો)
 # -----------------------------------------------------------------------------
 MASTER_GEMINI_API_KEY = "AIzaSyCYrHDVTFsN8zknwutNDfaxCcx2AzMbUxc" 
-MODEL_NAME = "gemini-2.5-flash"  # હાઇ-ડિમાન્ડથી બચવા માટે સૌથી સ્ટેબલ અને ફાસ્ટ મોડેલ
+MODEL_NAME = "gemini-2.5-flash"  
 
 # -----------------------------------------------------------------------------
 # SESSION STATE MANAGEMENT
@@ -63,7 +63,6 @@ if "is_logged_in" not in st.session_state:
 # ADVANCED MULTI-FILE PARSING ENGINE
 # -----------------------------------------------------------------------------
 def parse_ai_response_to_files(ai_text):
-    """રેગ્યુલર એક્સપ્રેશન એન્જિન જે AI દ્વારા બનાવાયેલી તમામ ફાઇલોને બ્રેક કર્યા વગર એક્સટ્રેક્ટ કરે છે."""
     pattern = r'<file\s+name="([^"]+)">([\s\S]*?)<\/file>'
     matches = re.findall(pattern, ai_text)
     parsed_files = {}
@@ -72,7 +71,6 @@ def parse_ai_response_to_files(ai_text):
     return parsed_files
 
 def generate_complex_application(prompt, token):
-    """WebMaster નું એડવાન્સ એન્જિન જે Classplus જેવા મલ્ટિ-પેજ આર્કિટેક્ચર સપોર્ટ કરે છે."""
     if not token or token == "YOUR_GEMINI_API_KEY_HERE":
         return "⚠️ WebMaster Error: Please hardcode your valid Gemini API Key inside app.py line 34."
 
@@ -195,4 +193,57 @@ with col_left:
 
 # --- RIGHT PANEL: Professional Multi-File Workspace Explorer ---
 with col_right:
-    st.markdown("### 🛠️ Code Workspace & Preview
+    st.markdown("### 🛠️ Code Workspace & Preview")
+    filenames = list(st.session_state.project_files.keys())
+    
+    if filenames:
+        current_file = st.session_state.selected_file
+        if current_file not in filenames:
+            current_file = filenames
+            
+        selected_file = st.selectbox("📂 Active Project Repository Explorer", options=filenames, index=filenames.index(current_file))
+        st.session_state.selected_file = selected_file
+        
+        current_content = st.session_state.project_files[selected_file]
+        edited_code = st.text_area(label=f"Code Editor: {selected_file}", value=current_content, height=250)
+        st.session_state.project_files[selected_file] = edited_code
+        
+        # Build comprehensive export zip package
+        zip_buffer = io.BytesIO()
+        with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
+            for fname, fcontent in st.session_state.project_files.items():
+                zip_file.writestr(fname, fcontent)
+        
+        st.download_button(
+            label="📥 Export Full App Project Source Bundle (.ZIP)",
+            data=zip_buffer.getvalue(),
+            file_name="webmaster_pro_package.zip",
+            mime="application/zip",
+            use_container_width=True
+        )
+
+        st.markdown("---")
+        st.markdown("### 🖥️ Real-time Component Sandbox Preview")
+        
+        # Automatic environment stitching for main viewer files
+        active_preview_file = "index.html" if "index.html" in st.session_state.project_files else filenames
+        
+        if active_preview_file.endswith(".html"):
+            html_code = st.session_state.project_files.get(active_preview_file, "")
+            css_code = st.session_state.project_files.get("style.css", "")
+            js_code = st.session_state.project_files.get("script.js", "")
+            
+            combined_html = html_code
+            if "<head>" in combined_html:
+                combined_html = combined_html.replace("<head>", f"<head>\n<style>{css_code}</style>")
+            else:
+                combined_html = f"<style>{css_code}</style>\n" + combined_html
+                
+            if "</body>" in combined_html:
+                combined_html = combined_html.replace("</body>", f"<script>{js_code}</script>\n</body>")
+            else:
+                combined_html = combined_html + f"\n<script>{js_code}</script>"
+                
+            components.html(combined_html, height=350, scrolling=True)
+        else:
+            st.info(f"Sandbox Preview optimized for markup files. Currently exploring raw backend script layout: `{active_preview_file}`")
