@@ -38,7 +38,7 @@ st.markdown("""
 # MASTER API CONFIGURATION (તમારી સાચી API કી અહીં સેટ કરો)
 # -----------------------------------------------------------------------------
 # કોડની અંદર કી લખવાની જગ્યાએ આ સેફ લાઇન મૂકો
-MASTER_GEMINI_API_KEY = st.secrets["AIzaSyD6nfmSwQizk0bh2bVOLMVPTcRHOkI8bAk"]
+MASTER_GEMINI_API_KEY = st.secrets["AQ.Ab8RN6IlzlzvRHHAiTILGbA_XG0JkbCSGLO54Ctafhh77mz0AA"]
 MODEL_NAME = "gemini-2.5-flash"  
 
 # -----------------------------------------------------------------------------
