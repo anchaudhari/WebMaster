@@ -16,35 +16,15 @@ st.set_page_config(
 # 2. Replit-like Dark Premium UI Custom CSS Inject
 st.markdown("""
     <style>
-    /* Main background color like Replit */
     .stApp {
         background-color: #121316 !important;
         color: #f3f4f6 !important;
     }
-    /* Header customization */
     h1, h2, h3 {
         color: #ffffff !important;
         font-family: 'Inter', sans-serif;
         text-align: center;
     }
-    /* Custom Styling for Cards and Quick Buttons */
-    .suggestion-btn {
-        background-color: #1c1e24;
-        border: 1px solid #2e323d;
-        color: #e5e7eb;
-        padding: 10px 20px;
-        border-radius: 20px;
-        text-align: center;
-        display: inline-block;
-        margin: 5px;
-        cursor: pointer;
-        font-size: 14px;
-    }
-    .suggestion-btn:hover {
-        background-color: #2e323d;
-        border-color: #4b5563;
-    }
-    /* Center container helper */
     .center-text {
         text-align: center;
     }
@@ -89,9 +69,6 @@ if "project_files" not in st.session_state:
 
 if "selected_file" not in st.session_state:
     st.session_state.selected_file = "index.html"
-
-if "quick_prompt" not in st.session_state:
-    st.session_state.quick_prompt = ""
 
 # -----------------------------------------------------------------------------
 # 4. UTILITY FUNCTIONS
@@ -144,64 +121,33 @@ def generate_application_code(prompt, provider, token, p_type):
 # -----------------------------------------------------------------------------
 # 5. MAIN INTERFACE SPLIT (Replit Dashboard Look)
 # -----------------------------------------------------------------------------
-col_left, col_right = st.columns()
+# Safely created columns with parameters fixed!
+col_left, col_right = st.columns(2)
 
 # --- LEFT SIDE: Replit Central Input Console ---
 with col_left:
     st.markdown("<br><br>", unsafe_allow_html=True)
     st.markdown("## Hi Anchaudhari2025, what do you want to make?")
     st.caption("WebMaster AI Agent will instantly build, code, and deploy your idea.")
-    
-    # Quick Category Prompt Fillers
-    st.markdown("<div class='center-text'>", unsafe_allow_html=True)
-    c1, c2, c3, c4, c5 = st.columns(5)
-    with c1:
-        if st.button("🌐 Website"): 
-            st.session_state.quick_prompt = "Create a modern portfolio website for a developer with dark mode"
-            st.rerun()
-    with c2:
-        if st.button("📱 Mobile"): 
-            st.session_state.quick_prompt = "Design a mobile-responsive habit tracker app dashboard layout"
-            st.rerun()
-    with c3:
-        if st.button("🎨 Design"): 
-            st.session_state.quick_prompt = "Build a beautiful landing page for an AI agency with glassmorphism UI"
-            st.rerun()
-    with c4:
-        if st.button("📊 Slides"): 
-            st.session_state.quick_prompt = "Create an interactive presentation slide viewer component in HTML"
-            st.rerun()
-    with c5:
-        if st.button("📈 Data Vis"): 
-            st.session_state.quick_prompt = "Build a financial budget tracker with live dashboard interactive charts"
-            st.rerun()
-    st.markdown("</div>", unsafe_allow_html=True)
+    st.markdown("<br>", unsafe_allow_html=True)
 
     # Main Central Input Box
     user_prompt = st.text_input(
-        "Make a launch video about...", 
-        value=st.session_state.quick_prompt,
+        "Prompt Bar", 
         placeholder="Type an app idea here (e.g., 'Make a classic snake game with scoreboard')...",
+        label_visibility="collapsed",
         key="main_prompt_input"
     )
     
     build_btn = st.button("🚀 Build & Run Application", use_container_width=True, type="primary")
 
-    # Example Prompt Chips
-    st.markdown("<p style='text-align:center;color:#6b7280;margin-top:15px;'>Try an example prompt 🔄</p>", unsafe_allow_html=True)
-    ex1, ex2, ex3 = st.columns(3)
-    with ex1:
-        if st.button("Fitness app onboarding wireframe", use_container_width=True):
-            st.session_state.quick_prompt = "Build a fitness app onboarding screen wireframe with beautiful step forms"
-            st.rerun()
-    with ex2:
-        if st.button("B2B project management app", use_container_width=True):
-            st.session_state.quick_prompt = "Create a full B2B project management Kanban board dashboard application"
-            st.rerun()
-    with ex3:
-        if st.button("Product launch presentation", use_container_width=True):
-            st.session_state.quick_prompt = "Make an interactive product launch presentation deck with sliding animations"
-            st.rerun()
+    # Fixed Quick Idea helper text selection
+    st.markdown("---")
+    st.markdown("💡 **Quick Templates Reference:**")
+    st.info("Copy & Paste these cool ideas into the prompt box above:\n\n"
+            "1. `Build a beautiful portfolio website with dark-mode animation` \n"
+            "2. `Create a B2B Kanban Board project management application` \n"
+            "3. `Make a classic snake game with high-score tracking system` ")
 
     # Execution Action Logic
     if build_btn and user_prompt:
@@ -211,8 +157,8 @@ with col_left:
             
             if new_files:
                 st.session_state.project_files = new_files
-                # પરફેક્ટ સોલ્યુશન: આખા લિસ્ટના બદલે ફક્ત પહેલી ફાઇલનું નામ (String) સેટ કર્યું
-                st.session_state.selected_file = list(new_files.keys())
+                if list(new_files.keys()):
+                    st.session_state.selected_file = list(new_files.keys())
                 st.toast("Application successfully generated!", icon="🎉")
                 st.rerun()
             else:
@@ -225,12 +171,57 @@ with col_right:
     filenames = list(st.session_state.project_files.keys())
     
     if filenames:
-        # File selector dropdown
+        # Safely determine active index
+        current_file = st.session_state.selected_file
+        if current_file not in filenames:
+            current_file = filenames
+            
         selected_file = st.selectbox(
             "📂 Project Files Explorer", 
             options=filenames,
-            index=filenames.index(st.session_state.selected_file) if st.session_state.selected_file in filenames else 0
+            index=filenames.index(current_file)
         )
         st.session_state.selected_file = selected_file
         
-        # Display
+        # Display/Edit code
+        current_content = st.session_state.project_files[selected_file]
+        edited_code = st.text_area(label=f"Editing Code: {selected_file}", value=current_content, height=250)
+        st.session_state.project_files[selected_file] = edited_code
+        
+        # Download Zip actions
+        zip_buffer = io.BytesIO()
+        with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
+            for fname, fcontent in st.session_state.project_files.items():
+                zip_file.writestr(fname, fcontent)
+        
+        st.download_button(
+            label="📥 Download WebMaster App (.ZIP)",
+            data=zip_buffer.getvalue(),
+            file_name="webmaster_project.zip",
+            mime="application/zip",
+            use_container_width=True
+        )
+
+        st.markdown("---")
+        st.markdown("### 🖥️ Interactive Live Preview")
+        
+        # Dynamic web simulation builder
+        if "index.html" in st.session_state.project_files:
+            html_code = st.session_state.project_files.get("index.html", "")
+            css_code = st.session_state.project_files.get("style.css", "")
+            js_code = st.session_state.project_files.get("script.js", "")
+            
+            combined_html = html_code
+            if "<head>" in combined_html:
+                combined_html = combined_html.replace("<head>", f"<head>\n<style>{css_code}</style>")
+            else:
+                combined_html = f"<style>{css_code}</style>\n" + combined_html
+                
+            if "</body>" in combined_html:
+                combined_html = combined_html.replace("</body>", f"<script>{js_code}</script>\n</body>")
+            else:
+                combined_html = combined_html + f"\n<script>{js_code}</script>"
+                
+            components.html(combined_html, height=400, scrolling=True)
+        else:
+            st.info("Live Preview is optimized for Web layout types.")
