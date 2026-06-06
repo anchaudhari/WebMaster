@@ -39,7 +39,7 @@ st.markdown("""
 # -----------------------------------------------------------------------------
 # 
 MASTER_GEMINI_API_KEY = "AIzaSyCYrHDVTFsN8zknwutNDfaxCcx2AzMbUxc" 
-MODEL_NAME = "gemini-1.5-flash"
+MODEL_NAME = "gemini-2.5-flash"
 
 # -----------------------------------------------------------------------------
 # SESSION STATE MANAGEMENT (યુઝર ટ્રેકિંગ અને લોગિન)
