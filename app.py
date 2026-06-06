@@ -39,7 +39,7 @@ st.markdown("""
 # -----------------------------------------------------------------------------
 # કોડની અંદર કી લખવાની જગ્યાએ આ સેફ લાઇન મૂકો
 MASTER_GEMINI_API_KEY = st.secrets["AIzaSyD6nfmSwQizk0bh2bVOLMVPTcRHOkI8bAk"]
-MODEL_NAME = "gemini-.5-flash"  
+MODEL_NAME = "gemini-2.5-flash"  
 
 # -----------------------------------------------------------------------------
 # SESSION STATE MANAGEMENT
