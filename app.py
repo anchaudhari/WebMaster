@@ -13,7 +13,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# 2. Replit-like Ultra Dark CSS Styling
+# 2. Premium Replit Dark Look Custom UI Inject
 st.markdown("""
     <style>
     .stApp {
@@ -35,13 +35,6 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
-# MASTER API CONFIGURATION (તમારી સાચી API કી અહીં સેટ કરો)
-# -----------------------------------------------------------------------------
-# કોડની અંદર કી લખવાની જગ્યાએ આ સેફ લાઇન મૂકો
-MY_GEMINI_KEY = "AQ.Ab8RN6IlzlzvRHHAiTILGbA_XG0JkbCSGLO54Ctafhh77mz0AA"
-MODEL_NAME = "gemini-2.5-flash"  
-
-# -----------------------------------------------------------------------------
 # SESSION STATE MANAGEMENT
 # -----------------------------------------------------------------------------
 if "project_files" not in st.session_state:
@@ -61,9 +54,10 @@ if "is_logged_in" not in st.session_state:
     st.session_state.is_logged_in = False
 
 # -----------------------------------------------------------------------------
-# ADVANCED MULTI-FILE PARSING ENGINE
+# ADVANCED MULTI-FILE PARSING & GENERATION ENGINE
 # -----------------------------------------------------------------------------
 def parse_ai_response_to_files(ai_text):
+    """Parses full code blocks from AI response cleanly."""
     pattern = r'<file\s+name="([^"]+)">([\s\S]*?)<\/file>'
     matches = re.findall(pattern, ai_text)
     parsed_files = {}
@@ -71,16 +65,17 @@ def parse_ai_response_to_files(ai_text):
         parsed_files[filename.strip()] = content.strip()
     return parsed_files
 
-def generate_complex_application(prompt, token):
-    if not token or token == "YOUR_GEMINI_API_KEY_HERE":
-        return "⚠️ WebMaster Error: Please hardcode your valid Gemini API Key inside app.py line 34."
+def generate_complex_application(prompt, token, model_choice):
+    """WebMaster Pro High-End Generation Pipeline supporting Gemini 2.5 Models."""
+    if not token:
+        return "⚠️ WebMaster Notice: Please provide a valid Gemini API Key in the sidebar to power up the AI Agent."
 
     system_instruction = (
-        "You are WebMaster Pro, a senior full-stack software architect agent specializing in complex platforms like Classplus, E-commerce, and SaaS. "
+        "You are WebMaster Pro, a senior full-stack software architect agent specializing in complex enterprise platforms like Classplus, LMS, and SaaS. "
         "Your goal is to build comprehensive, working applications with multiple modular code files. "
         "You must structure every file completely and cleanly inside XML tags like this:\n"
         "<file name=\"filename.ext\">\n...code...\n</file>\n"
-        "For complex learning systems like Classplus, output multiple files if needed (e.g., dashboard.html, store.html, quiz.html, script.js, style.css) "
+        "For complex learning systems like Classplus, output multiple relevant modules (e.g., dashboard.html, store.html, quiz.html, script.js, style.css) "
         "so that the user gets a full architectural blueprint. Do not output conversational text or general markdown blocks outside the XML file tags."
     )
     
@@ -96,7 +91,7 @@ def generate_complex_application(prompt, token):
         from google.genai import types
         client = genai.Client(api_key=token)
         response = client.models.generate_content(
-            model=MODEL_NAME,
+            model=model_choice,
             contents=enhanced_prompt,
             config=types.GenerateContentConfig(system_instruction=system_instruction, temperature=0.2)
         )
@@ -105,9 +100,16 @@ def generate_complex_application(prompt, token):
         return f"❌ System Engine Error: {str(e)}"
 
 # -----------------------------------------------------------------------------
-# SIDEBAR CONTROL
+# SIDEBAR CONTROL & LOGIN INTERFACE
 # -----------------------------------------------------------------------------
-st.sidebar.title("💻 WebMaster Account")
+st.sidebar.title("💻 WebMaster Studio")
+
+# User API Configuration inside sidebar directly
+st.sidebar.subheader("🔑 AI Engine Activation")
+user_entered_api = st.sidebar.text_input("Enter Gemini API Key", type="password", placeholder="AI Studio Key Here...")
+gemini_model = st.sidebar.selectbox("Gemini Model Engine", ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-1.5-flash"])
+
+st.sidebar.markdown("---")
 
 if not st.session_state.is_logged_in:
     st.sidebar.markdown("""
@@ -117,7 +119,7 @@ if not st.session_state.is_logged_in:
         </div>
     """, unsafe_allow_html=True)
     
-    st.sidebar.subheader("🔑 Access Portal")
+    st.sidebar.subheader("👤 Premium User Portal")
     username = st.sidebar.text_input("Username", key="user_login_id")
     password = st.sidebar.text_input("Password", type="password", key="user_login_pass")
     login_btn = st.sidebar.button("Login & Unlock Pro Engine", use_container_width=True)
@@ -138,7 +140,7 @@ else:
         st.rerun()
 
 st.sidebar.markdown("---")
-st.sidebar.caption(f"🔧 Total Builds Managed: {st.session_state.apps_generated_count}")
+st.sidebar.caption(f"🔧 Total Builds Managed in Session: {st.session_state.apps_generated_count}")
 
 # -----------------------------------------------------------------------------
 # MAIN REPLIT-STYLE DASHBOARD INTERFACE
@@ -162,23 +164,25 @@ with col_left:
     
     build_btn = st.button("🚀 Execute Architecture Generation", use_container_width=True, type="primary")
 
-    # Limit guard logic
+    # Limit guard logic (1 Free App Limitation)
     can_build = True
     if st.session_state.apps_generated_count >= 1 and not st.session_state.is_logged_in:
         can_build = False
         st.markdown("""
             <div style='background-color: #3b1414; padding: 15px; border-radius: 8px; border: 1px solid #ef4444; margin-top: 15px;'>
             <p style='margin:0; color:#fca5a5;'>🛑 <b>Free Compilation Limit Enforced</b></p>
-            <p style='margin:0; font-size:13px; color:#d1d5db;'>You have created 1 free software workspace. Please <b>Login</b> via the left side portal to generate advanced multi-module apps.</p>
+            <p style='margin:0; font-size:13px; color:#d1d5db;'>You have created 1 free software workspace. Please <b>Login</b> via the left side portal to generate advanced multi-module apps like Classplus.</p>
             </div>
         """, unsafe_allow_html=True)
 
     if build_btn and user_prompt:
         if not can_build:
             st.toast("Authentication required for additional builds.", icon="🔒")
+        elif not user_entered_api:
+            st.error("⚠️ Active Engine Error: Please provide your Gemini API Key in the sidebar to initiate build sequence.")
         else:
             with st.spinner("WebMaster AI Agent is industrializing your source code tree... 🛠️"):
-                ai_raw_response = generate_complex_application(user_prompt, MASTER_GEMINI_API_KEY)
+                ai_raw_response = generate_complex_application(user_prompt, user_entered_api, gemini_model)
                 new_files = parse_ai_response_to_files(ai_raw_response)
                 
                 if new_files:
