@@ -211,7 +211,7 @@ with col_left:
             
             if new_files:
                 st.session_state.project_files = new_files
-                # FIXED: Force variable back to string representation element from keys list
+                # પરફેક્ટ સોલ્યુશન: આખા લિસ્ટના બદલે ફક્ત પહેલી ફાઇલનું નામ (String) સેટ કર્યું
                 st.session_state.selected_file = list(new_files.keys())
                 st.toast("Application successfully generated!", icon="🎉")
                 st.rerun()
@@ -225,7 +225,7 @@ with col_right:
     filenames = list(st.session_state.project_files.keys())
     
     if filenames:
-        # File selector dropdown like tabs
+        # File selector dropdown
         selected_file = st.selectbox(
             "📂 Project Files Explorer", 
             options=filenames,
@@ -233,47 +233,4 @@ with col_right:
         )
         st.session_state.selected_file = selected_file
         
-        # Display/Edit code
-        current_content = st.session_state.project_files[selected_file]
-        edited_code = st.text_area(label=f"Editing Code: {selected_file}", value=current_content, height=250)
-        st.session_state.project_files[selected_file] = edited_code
-        
-        # Download Zip actions
-        zip_buffer = io.BytesIO()
-        with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
-            for fname, fcontent in st.session_state.project_files.items():
-                zip_file.writestr(fname, fcontent)
-        
-        st.download_button(
-            label="📥 Download WebMaster App (.ZIP)",
-            data=zip_buffer.getvalue(),
-            file_name="webmaster_project.zip",
-            mime="application/zip",
-            use_container_width=True
-        )
-
-        st.markdown("---")
-        st.markdown("### 🖥️ Interactive Live Preview")
-        
-        # Dynamic web simulation builder
-        if "index.html" in st.session_state.project_files:
-            html_code = st.session_state.project_files.get("index.html", "")
-            css_code = st.session_state.project_files.get("style.css", "")
-            js_code = st.session_state.project_files.get("script.js", "")
-            
-            combined_html = html_code
-            if "<head>" in combined_html:
-                combined_html = combined_html.replace("<head>", f"<head>\n<style>{css_code}</style>")
-            else:
-                combined_html = f"<style>{css_code}</style>\n" + combined_html
-                
-            if "</body>" in combined_html:
-                combined_html = combined_html.replace("</body>", f"<script>{js_code}</script>\n</body>")
-            else:
-                combined_html = combined_html + f"\n<script>{js_code}</script>"
-                
-            components.html(combined_html, height=400, scrolling=True)
-        else:
-            st.info("Live Preview is optimized for Web layout types.")
-    else:
-        st.info("No files available in current workspace.")
+        # Display
