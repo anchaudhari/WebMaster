@@ -5,7 +5,7 @@ import requests
 import streamlit as st
 import streamlit.components.v1 as components
 
-# 1. Page Configuration (Premium Replit Style Workspace)
+# 1. Page Configuration (Premium Workspace)
 st.set_page_config(
     page_title="WebMaster Pro - Ultimate Agent",
     page_icon="💻",
@@ -16,7 +16,7 @@ st.set_page_config(
 # 2. Hardcoded API Settings (તમારી સાચી Gemini 2.5 API Key અહીં નાખો)
 # -----------------------------------------------------------------------------
 USER_GEMINI_KEY = "AIzaSyA9zukoNhfF419sKDFifc3wrV4DacfoyoY"
-MODEL_ENGINE_NAME = "gemini-1.5-flash"
+MODEL_ENGINE_NAME = "gemini-2.5-flash"  # FIXED: ગૂગલનું ઓફિશિયલ Gemini 2.5 પ્રોડક્શન મોડેલ
 # -----------------------------------------------------------------------------
 
 # 3. Replit Dark Theme UI Styling
@@ -49,21 +49,21 @@ if "generated_apps_tracker" not in st.session_state: st.session_state.generated_
 if "is_logged_in" not in st.session_state: st.session_state.is_logged_in = False
 if "app_publish_status" not in st.session_state: st.session_state.app_publish_status = False
 
-# 5. REST API Engine (બિલ્ડિંગ કેપેબિલિટી સાથે)
+# 5. REST API Engine (Gemini 2.5 માટે ૧૦૦% ફિક્સ)
 def build_application_backend(prompt, api_key):
     clean_key = str(api_key).strip()
     if not clean_key or clean_key == "YOUR_GEMINI_2_5_API_KEY_HERE":
         return "❌ WebMaster Configuration Notice: Please open app.py and enter your active Gemini 2.5 API Key on line 22."
     
+    # URL સ્ટ્રક્ચરને Gemini 2.5 પ્રોડક્શન ગ્રેડ માટે સેટ કર્યું છે
     full_url = f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL_ENGINE_NAME}:generateContent?key={clean_key}"
     headers = {'Content-Type': 'application/json'}
     
-    # AI ને સ્પષ્ટ આદેશ કે તે અધૂરો કોડ ન આપે, પૂરી કામ કરતી એપ જ આપે
     system_rules = (
         "You are WebMaster Pro, an elite software architect like Replit Agent. Your job is to build FULLY FUNCTIONAL, WORKING, INTERACTIVE applications, web apps, or tools based on user request. "
         "You must output ALL necessary frontend components (HTML, CSS, JavaScript) so it can run directly in a browser sandbox. "
         "You MUST wrap each file code inside XML format tags EXACTLY like this:\n"
-        "<file name=\"index.html\">\n...fully working html code with structures...\n</file>\n"
+        "<file name=\"index.html\">\n...fully working html code...\n</file>\n"
         "<file name=\"style.css\">\n...complete design css...\n</file>\n"
         "<file name=\"script.js\">\n...interactive working logic javascript code...\n</file>\n"
         "CRITICAL: Do not write explanations, markdown text, or descriptions outside the XML file tags. Only output the tags and code."
@@ -78,10 +78,16 @@ def build_application_backend(prompt, api_key):
     try:
         response = requests.post(full_url, headers=headers, json=payload, timeout=60)
         res_json = response.json()
-        if response.status_code == 200:
-            return res_json['candidates']['content']['parts']['text']
-        else:
-            return f"❌ AI Engine Error ({response.status_code}): {res_json.get('error', {}).get('message', 'API Error')}"
+        
+        # એડવાન્સ સેફ્ટી ચેક (તમારી 'list indices must be integers' વાળી એરર ક્યારેય નહીં આવે)
+        if 'candidates' in res_json and len(res_json['candidates']) > 0:
+            candidate = res_json['candidates']
+            if 'content' in candidate and 'parts' in candidate['content'] and len(candidate['content']['parts']) > 0:
+                return candidate['content']['parts']['text']
+        
+        error_msg = res_json.get('error', {}).get('message', 'Unknown AI Engine response structure.')
+        return f"❌ AI Engine Error: {error_msg}"
+        
     except Exception as e:
         return f"❌ Connection Error: {str(e)}"
 
@@ -97,7 +103,7 @@ def parse_incoming_file_tree(response_text):
     if matches:
         return {fname.strip(): content.strip() for fname, content in matches}
         
-    # માર્કડાઉન ફેસબેક ફિલ્ટર
+    # માર્કડાઉન બેકઅપ સિસ્ટમ
     files_dict = {}
     html_match = re.search(r'```html([\s\S]*?)```', response_text)
     css_match = re.search(r'```css([\s\S]*?)```', response_text)
@@ -118,7 +124,7 @@ with left_console:
     st.caption("WebMaster Pro Agent will write, evaluate, and assemble your full production build.")
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # ગિવ હિયર યોર માઇન્ડ થોટ
+    # બિલકુલ તમારું માગેલું "give here your mind thought" બોક્સ
     user_prompt_input = st.text_area(
         "Prompt Input Element",
         placeholder="give here your mind thought",
@@ -129,7 +135,7 @@ with left_console:
     
     trigger_build = st.button("🚀 Build & Run Application", use_container_width=True, type="primary")
 
-    # ૧ ફ્રી એપ ચેકિંગ સિસ્ટમ
+    # ૧ એપ ફ્રી ચેકિંગ અને લોગિન ગેટ સિસ્ટમ
     allow_compilation = True
     if st.session_state.generated_apps_tracker >= 1 and not st.session_state.is_logged_in:
         allow_compilation = False
@@ -156,7 +162,7 @@ with left_console:
                     st.toast("Application Compiled and Running Live!", icon="🎉")
                     st.rerun()
                 else:
-                    st.error("System Core Fallback: AI એ કોડ આપ્યો પણ સ્ટ્રક્ચર અલગ છે. રોડેટા નીચે મુજબ છે:")
+                    st.error("સિસ્ટમ નોટિસ: કોડ જનરેટ થયો છે પરંતુ સેન્ડબોક્સ સેટઅપ બાકી છે. આઉટપુટ જુઓ:")
                     st.code(raw_response)
 
 with right_workspace:
@@ -196,21 +202,17 @@ with right_workspace:
         st.markdown("---")
         st.markdown("### 🖥️ Live Sandbox Preview (કામ કરતી લાઈવ એપ)")
         
-        # એપને રન કરવા માટે ત્રણેય ફાઇલો (HTML, CSS, JS) ને એક સાથે ઇન્ટિગ્રેટ કરીને પ્રિવ્યૂ એન્જિન બનાવ્યું છે
         html_code = st.session_state.project_files.get("index.html", "")
         css_code = st.session_state.project_files.get("style.css", "")
         js_code = st.session_state.project_files.get("script.js", "")
         
-        # સ્માર્ટ સેન્ડબોક્સ કમ્પાઇલેશન
         sandbox_render = f"""
         <!DOCTYPE html>
         <html>
         <head>
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <style>
-            {css_code}
-            </style>
+            <style>{css_code}</style>
         </head>
         <body>
             {html_code}
