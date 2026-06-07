@@ -138,5 +138,5 @@ with left_console:
     allow_compilation = True
     if st.session_state.generated_apps_tracker >= 1 and not st.session_state.is_logged_in:
         allow_compilation = False
-        st.markdown("""
+        st.markdown(""
             <div style='background-color: #3b1414; padding: 15px; border-radius: 6px; border: 1px solid #ef4444; margin-top:
