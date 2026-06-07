@@ -16,7 +16,7 @@ st.set_page_config(
 # 2. Hardcoded API Settings (તમારી સાચી Gemini 2.5 API Key અહીં નાખો)
 # -----------------------------------------------------------------------------
 USER_GEMINI_KEY = "AIzaSyA9zukoNhfF419sKDFifc3wrV4DacfoyoY"
-MODEL_ENGINE_NAME = "gemini-2.5-flash"
+MODEL_ENGINE_NAME = "gemini-1.5-flash"
 # -----------------------------------------------------------------------------
 
 # 3. Replit Dark Theme UI Styling
