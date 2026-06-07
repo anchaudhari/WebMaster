@@ -9,8 +9,6 @@ st.set_page_config(page_title="AI Multi-App Builder", layout="wide", initial_sid
 try:
     GEMINI_API_KEY = st.secrets["AIzaSyA9zukoNhfF419sKDFifc3wrV4DacfoyoY"]
     genai.configure(api_key=GEMINI_API_KEY)
-except Exception:
-    st.error("Error: GEMINI_API_KEY is missing in Streamlit Secrets! Please configure it in settings.")
 
 # Initialize Session States for Application Flow
 if "apps_created" not in st.session_state:
