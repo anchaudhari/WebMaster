@@ -48,12 +48,18 @@ if "generated_apps_tracker" not in st.session_state: st.session_state.generated_
 if "is_logged_in" not in st.session_state: st.session_state.is_logged_in = False
 if "app_publish_status" not in st.session_state: st.session_state.app_publish_status = False
 
-# 5. REST API Engine (Super Stable REST Method)
+# 5. Fixed REST API Engine (Connection Adapter Error Resolved)
 def build_application_backend(prompt, api_key):
-    if not api_key or api_key == "YOUR_GEMINI_2_5_API_KEY_HERE":
+    # સિક્યોરલી કી માંથી કોઈ પણ અજાણતા સ્પેસ કે વધારાના અક્ષરો સાફ કરવા માટે (.strip())
+    clean_key = str(api_key).strip()
+    
+    if not clean_key or clean_key == "YOUR_GEMINI_2_5_API_KEY_HERE":
         return "❌ WebMaster Configuration Notice: Please open app.py and enter your active Gemini 2.5 API Key on line 21."
     
-    url = f"[https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=](https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=){api_key}"
+    # URL ફોર્મેટને બિલકુલ પ્લેન પાયથોન સ્ટ્રિંગમાં ફિક્સ કર્યું છે
+    base_url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
+    full_url = f"{base_url}?key={clean_key}"
+    
     headers = {'Content-Type': 'application/json'}
     
     system_rules = (
@@ -72,7 +78,7 @@ def build_application_backend(prompt, api_key):
     }
     
     try:
-        response = requests.post(url, headers=headers, json=payload)
+        response = requests.post(full_url, headers=headers, json=payload, timeout=60)
         res_json = response.json()
         
         if response.status_code == 200:
@@ -81,20 +87,17 @@ def build_application_backend(prompt, api_key):
             error_msg = res_json.get('error', {}).get('message', 'Unknown API Error')
             return f"❌ AI Engine Error ({response.status_code}): {error_msg}"
     except Exception as e:
-        return f"❌ Connection Error: {str(e)}"
+        return f"❌ HTTP Connection Error: {str(e)}"
 
-# 6. Advanced Smart Parser (ભૂલથી પણ એરર આવવા નહીં દે)
+# 6. Advanced Smart Parser
 def parse_incoming_file_tree(response_text):
-    # રીત ૧: સ્ટાન્ડર્ડ XML ટેગ ચેક કરશે double quotes સાથે
     pattern = r'<file\s+name="([^"]+)">([\s\S]*?)<\/file>'
     matches = re.findall(pattern, response_text)
     
-    # રીત ૨: જો સિંગલ ક્વાટ્સ હોય તો તેના માટે ચેક કરશે
     if not matches:
         pattern = r"<file\s+name='([^']+)'>([\s\S]*?)<\/file>"
         matches = re.findall(pattern, response_text)
         
-    # રીત ૩: સ્માર્ટ ફેસબેક (જો AI ટેગ બનાવવાનું ભૂલી જાય અને માત્ર માર્કડાઉન આપે)
     if not matches:
         files_dict = {}
         html_match = re.search(r'```html([\s\S]*?)```', response_text)
@@ -119,7 +122,6 @@ with left_console:
     st.caption("WebMaster Pro Agent will write, evaluate, and assemble your full production build.")
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # બિલકુલ તમારું માગેલું "give here your mind thought" ટેક્સ્ટ બોક્સ
     user_prompt_input = st.text_area(
         "Prompt Input Element",
         placeholder="give here your mind thought",
@@ -130,7 +132,6 @@ with left_console:
     
     trigger_build = st.button("🚀 Build & Run Application", use_container_width=True, type="primary")
 
-    # ૧ ફ્રી એપ લિમિટ ચેક લોજિક
     allow_compilation = True
     if st.session_state.generated_apps_tracker >= 1 and not st.session_state.is_logged_in:
         allow_compilation = False
@@ -157,7 +158,7 @@ with left_console:
                     st.toast("Application framework refreshed successfully!", icon="🎉")
                     st.rerun()
                 else:
-                    st.error("Parsing Fallback Mode: AI આઉટપુટ ફોર્મેટ બદલાયું છે. કોડ નીચે પ્રમાણે છે:")
+                    st.error("Parsing Fallback Mode: AI આઉટપુટ લોડ થયું છે પરંતુ એક્સટ્રેક્ટ કરવામાં પ્રોબ્લેમ છે:")
                     st.code(raw_response)
 
 with right_workspace:
