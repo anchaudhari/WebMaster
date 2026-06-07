@@ -1,0 +1,23 @@
+import requests
+
+API_KEY = "AQ.Ab8RN6JKvpIoPK55HNv5umYW-OR9RiZ6x0ROej6E6lvzTEwi4w"
+
+url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent"
+
+headers = {
+    "Content-Type": "application/json",
+    "X-goog-api-key": API_KEY
+}
+
+data = {
+    "contents": [{
+        "parts": [{
+            "text": "hello"
+        }]
+    }]
+}
+
+r = requests.post(url, headers=headers, json=data)
+
+print(r.status_code)
+print(r.text)
