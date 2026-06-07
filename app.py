@@ -91,7 +91,7 @@ def build_application_backend(prompt, api_key):
     except Exception as e:
         return f"❌ Connection Error: {str(e)}"
 
-# 6. Ultra Smart Code Extractor (Parser)
+# 6. Ultra Smart Code Extractor (Parser with line 112 fully completed)
 def parse_incoming_file_tree(response_text):
     pattern = r'<file\s+name="([^"]+)">([\s\S]*?)<\/file>'
     matches = re.findall(pattern, response_text)
@@ -103,10 +103,33 @@ def parse_incoming_file_tree(response_text):
     if matches:
         return {fname.strip(): content.strip() for fname, content in matches}
         
-    # Markdown Fallback Filter
+    # Markdown Fallback Filter (FIXED syntax)
     files_dict = {}
     html_match = re.search(r'```html([\s\S]*?)```', response_text)
     css_match = re.search(r'```css([\s\S]*?)```', response_text)
     js_match = re.search(r'```javascript([\s\S]*?)```', response_text) or re.search(r'```js([\s\S]*?)```', response_text)
     
-    if html_match: files_dict["index.html"] = html_match.
+    if html_match: files_dict["index.html"] = html_match.group(1).strip()
+    if css_match: files_dict["style.css"] = css_match.group(1).strip()
+    if js_match: files_dict["script.js"] = js_match.group(1).strip()
+    
+    return files_dict
+
+# 7. Main Layout Dashboard (All English Interface)
+left_console, right_workspace = st.columns(2)
+
+with left_console:
+    st.markdown("<br><br>", unsafe_allow_html=True)
+    st.markdown("## Hi Creator, what do you want to make?")
+    st.caption("WebMaster Pro Agent will write, evaluate, and assemble your full production build.")
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    user_prompt_input = st.text_area(
+        "Prompt Input Element",
+        placeholder="give here your mind thought",
+        height=140,
+        label_visibility="collapsed",
+        key="central_replit_prompt"
+    )
+    
+    trigger_build = st.button("🚀 Build & Run Application",
