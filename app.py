@@ -13,11 +13,11 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# 2. Hardcoded API Settings (તમારી સાચી Gemini 2.5 API Key અહીં નાખો)
 # -----------------------------------------------------------------------------
-USER_GEMINI_KEY = " AQ.Ab8RN6I217zugbkJs493Ek-oFQcMaGrCyfUD3YFjZOHv5QnyAA "
+# BACKEND API HARDCODING (અહીં તમારી નવી ફ્રી કી પેસ્ટ કરો)
 # -----------------------------------------------------------------------------
-
+USER_GEMINI_KEY = " AQ.Ab8RN6I217zugbkJs493Ek-oFQcMaGrCyfUD3YFjZOHv5QnyAA"
+MODEL_ENGINE_NAME = "gemini-1.5-flash"  # અહીં ૧.૫ ફ્લેશ સેટ કરી દીધું છે
 # 3. Replit Dark Theme UI Styling
 st.markdown("""
     <style>
