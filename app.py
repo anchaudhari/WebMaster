@@ -91,7 +91,7 @@ def build_application_backend(prompt, api_key):
     except Exception as e:
         return f"❌ Connection Error: {str(e)}"
 
-# 6. Ultra Smart Code Extractor (Parser with Fix for Line 113)
+# 6. Ultra Smart Code Extractor (Parser)
 def parse_incoming_file_tree(response_text):
     pattern = r'<file\s+name="([^"]+)">([\s\S]*?)<\/file>'
     matches = re.findall(pattern, response_text)
@@ -103,90 +103,10 @@ def parse_incoming_file_tree(response_text):
     if matches:
         return {fname.strip(): content.strip() for fname, content in matches}
         
-    # Markdown Fallback Filter (All colons successfully checked here)
+    # Markdown Fallback Filter
     files_dict = {}
     html_match = re.search(r'```html([\s\S]*?)```', response_text)
     css_match = re.search(r'```css([\s\S]*?)```', response_text)
     js_match = re.search(r'```javascript([\s\S]*?)```', response_text) or re.search(r'```js([\s\S]*?)```', response_text)
     
-    if html_match: files_dict["index.html"] = html_match.group(1).strip()
-    if css_match: files_dict["style.css"] = css_match.group(1).strip()
-    if js_match: files_dict["script.js"] = js_match.group(1).strip()
-    
-    return files_dict
-
-# 7. Main Layout Dashboard (All English Interface)
-left_console, right_workspace = st.columns(2)
-
-with left_console:
-    st.markdown("<br><br>", unsafe_allow_html=True)
-    st.markdown("## Hi Creator, what do you want to make?")
-    st.caption("WebMaster Pro Agent will write, evaluate, and assemble your full production build.")
-    st.markdown("<br>", unsafe_allow_html=True)
-
-    user_prompt_input = st.text_area(
-        "Prompt Input Element",
-        placeholder="give here your mind thought",
-        height=140,
-        label_visibility="collapsed",
-        key="central_replit_prompt"
-    )
-    
-    trigger_build = st.button("🚀 Build & Run Application", use_container_width=True, type="primary")
-
-    # 1 Free App Gate Limit Feature
-    allow_compilation = True
-    if st.session_state.generated_apps_tracker >= 1 and not st.session_state.is_logged_in:
-        allow_compilation = False
-        st.markdown("""
-            <div style='background-color: #3b1414; padding: 15px; border-radius: 6px; border: 1px solid #ef4444; margin-top: 15px;'>
-            <p style='margin:0; color:#fca5a5; font-weight:bold;'>🛑 Free Sandbox Limit Reached</p>
-            <p style='margin:0; font-size:13px; color:#d1d5db;'>You have engineered 1 free application sandbox. Please <b>Login</b> on the sidebar account system to continue creating architectures.</p>
-            </div>
-        """, unsafe_allow_html=True)
-
-    if trigger_build and user_prompt_input:
-        if not allow_compilation:
-            st.toast("Authorization token missing. Please sign in.", icon="🔒")
-        else:
-            with st.spinner("WebMaster AI Agent is building live application modules... 🛠️"):
-                raw_response = build_application_backend(user_prompt_input, USER_GEMINI_KEY)
-                extracted_files = parse_incoming_file_tree(raw_response)
-                
-                if extracted_files:
-                    st.session_state.project_files = extracted_files
-                    st.session_state.selected_file = list(extracted_files.keys())
-                    st.session_state.generated_apps_tracker += 1
-                    st.session_state.published_url = None  
-                    st.toast("Application Compiled and Running Live!", icon="🎉")
-                    st.rerun()
-                else:
-                    st.error("System Core Fallback: Failed to extract code format. Raw AI Response:")
-                    st.code(raw_response)
-
-with right_workspace:
-    st.markdown("### 🛠️ Workspace Repository & Live Deployment")
-    file_map_list = list(st.session_state.project_files.keys())
-    
-    if file_map_list:
-        active_tab_file = st.session_state.selected_file
-        if active_tab_file not in file_map_list: active_tab_file = file_map_list
-            
-        selected_file_tab = st.selectbox("📂 Repository Files", options=file_map_list, index=file_map_list.index(active_tab_file))
-        st.session_state.selected_file = selected_file_tab
-        
-        live_content_code = st.session_state.project_files[selected_file_tab]
-        modified_code = st.text_area(label=f"Code Editor: {selected_file_tab}", value=live_content_code, height=180)
-        st.session_state.project_files[selected_file_tab] = modified_code
-        
-        act_col1, act_col2 = st.columns(2)
-        with act_col1:
-            zip_buffer_io = io.BytesIO()
-            with zipfile.ZipFile(zip_buffer_io, "w", zipfile.ZIP_DEFLATED) as packaged_zip:
-                for fname, fcontent in st.session_state.project_files.items(): packaged_zip.writestr(fname, fcontent)
-            st.download_button(label="📥 Export Code Bundle (.ZIP)", data=zip_buffer_io.getvalue(), file_name="webmaster_output.zip", mime="application/zip", use_container_width=True)
-            
-        with act_col2:
-            if st.button("🌐 Publish App Live", use_container_width=True):
-                unique_id = uuid.uuid4().hex[:8]
-                st.session_state.published_url = f"
+    if html_match: files_dict["index.html"] = html_match.
