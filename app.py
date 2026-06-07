@@ -58,7 +58,7 @@ else:
 
 # --- Application Generation Core ---
 if can_build:
-    col1, col2 = st.columns()
+    col1, col2 = st.columns(2)
     
     with col1:
         st.markdown("### Configuration")
