@@ -124,7 +124,6 @@ with left_console:
     st.caption("WebMaster Pro Agent will write, evaluate, and assemble your full production build.")
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # FIXED: Perfectly structured text area with closed parenthesis
     user_prompt_input = st.text_area(
         "Prompt Input Element",
         placeholder="give here your mind thought",
@@ -140,20 +139,4 @@ with left_console:
     if st.session_state.generated_apps_tracker >= 1 and not st.session_state.is_logged_in:
         allow_compilation = False
         st.markdown("""
-            <div style='background-color: #3b1414; padding: 15px; border-radius: 6px; border: 1px solid #ef4444; margin-top: 15px;'>
-            <p style='margin:0; color:#fca5a5; font-weight:bold;'>🛑 Free Sandbox Limit Reached</p>
-            <p style='margin:0; font-size:13px; color:#d1d5db;'>You have engineered 1 free application sandbox. Please <b>Login</b> on the sidebar account system to continue creating architectures.</p>
-            </div>
-        """, unsafe_allow_html=True)
-
-    if trigger_build and user_prompt_input:
-        if not allow_compilation:
-            st.toast("Authorization token missing. Please sign in.", icon="🔒")
-        else:
-            with st.spinner("WebMaster AI Agent is building live application modules... 🛠️"):
-                raw_response = build_application_backend(user_prompt_input, USER_GEMINI_KEY)
-                extracted_files = parse_incoming_file_tree(raw_response)
-                
-                if extracted_files:
-                    st.session_state.project_files = extracted_files
-                    st.session_state.
+            <div style='background-color: #3b1414; padding: 15px; border-radius: 6px; border: 1px solid #ef4444; margin-top:
