@@ -17,7 +17,7 @@ st.set_page_config(
 # 2. Hardcoded API Settings (Enter your active Gemini API Key here)
 # -----------------------------------------------------------------------------
 USER_GEMINI_KEY = "AIzaSyA9zukoNhfF419sKDFifc3wrV4DacfoyoY"
-MODEL_ENGINE_NAME = "gemini-2.5-flash"  # Highly stable and 100% free model
+MODEL_ENGINE_NAME = "gemini-1.5-flash"  # Highly stable and 100% free model
 # -----------------------------------------------------------------------------
 
 # 3. Replit Dark Theme UI Styling
@@ -91,7 +91,7 @@ def build_application_backend(prompt, api_key):
     except Exception as e:
         return f"❌ Connection Error: {str(e)}"
 
-# 6. Ultra Smart Code Extractor (Parser with line 112 fully completed)
+# 6. Ultra Smart Code Extractor (Parser)
 def parse_incoming_file_tree(response_text):
     pattern = r'<file\s+name="([^"]+)">([\s\S]*?)<\/file>'
     matches = re.findall(pattern, response_text)
@@ -103,7 +103,7 @@ def parse_incoming_file_tree(response_text):
     if matches:
         return {fname.strip(): content.strip() for fname, content in matches}
         
-    # Markdown Fallback Filter (FIXED syntax)
+    # Markdown Fallback Filter
     files_dict = {}
     html_match = re.search(r'```html([\s\S]*?)```', response_text)
     css_match = re.search(r'```css([\s\S]*?)```', response_text)
@@ -124,6 +124,7 @@ with left_console:
     st.caption("WebMaster Pro Agent will write, evaluate, and assemble your full production build.")
     st.markdown("<br>", unsafe_allow_html=True)
 
+    # FIXED: Perfectly structured text area with closed parenthesis
     user_prompt_input = st.text_area(
         "Prompt Input Element",
         placeholder="give here your mind thought",
@@ -132,4 +133,27 @@ with left_console:
         key="central_replit_prompt"
     )
     
-    trigger_build = st.button("🚀 Build & Run Application",
+    trigger_build = st.button("🚀 Build & Run Application", use_container_width=True, type="primary")
+
+    # 1 Free App Gate Limit Feature
+    allow_compilation = True
+    if st.session_state.generated_apps_tracker >= 1 and not st.session_state.is_logged_in:
+        allow_compilation = False
+        st.markdown("""
+            <div style='background-color: #3b1414; padding: 15px; border-radius: 6px; border: 1px solid #ef4444; margin-top: 15px;'>
+            <p style='margin:0; color:#fca5a5; font-weight:bold;'>🛑 Free Sandbox Limit Reached</p>
+            <p style='margin:0; font-size:13px; color:#d1d5db;'>You have engineered 1 free application sandbox. Please <b>Login</b> on the sidebar account system to continue creating architectures.</p>
+            </div>
+        """, unsafe_allow_html=True)
+
+    if trigger_build and user_prompt_input:
+        if not allow_compilation:
+            st.toast("Authorization token missing. Please sign in.", icon="🔒")
+        else:
+            with st.spinner("WebMaster AI Agent is building live application modules... 🛠️"):
+                raw_response = build_application_backend(user_prompt_input, USER_GEMINI_KEY)
+                extracted_files = parse_incoming_file_tree(raw_response)
+                
+                if extracted_files:
+                    st.session_state.project_files = extracted_files
+                    st.session_state.
