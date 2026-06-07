@@ -1,7 +1,7 @@
 import io
 import re
 import zipfile
-import requests  # નવી સેફ મેથડ: લાયબ્રેરી વગર ડાયરેક્ટ API કનેક્શન માટે
+import requests
 import streamlit as st
 import streamlit.components.v1 as components
 
@@ -48,25 +48,23 @@ if "generated_apps_tracker" not in st.session_state: st.session_state.generated_
 if "is_logged_in" not in st.session_state: st.session_state.is_logged_in = False
 if "app_publish_status" not in st.session_state: st.session_state.app_publish_status = False
 
-# 5. REST API Engine (બધી જ 401 અને TypeError એરર્સને કાયમ માટે ફિક્સ કરતું લોજિક)
+# 5. REST API Engine (Super Stable REST Method)
 def build_application_backend(prompt, api_key):
     if not api_key or api_key == "YOUR_GEMINI_2_5_API_KEY_HERE":
         return "❌ WebMaster Configuration Notice: Please open app.py and enter your active Gemini 2.5 API Key on line 21."
     
-    # Gemini 2.5 Flash સત્તાવાર REST API URL
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
-    
+    url = f"[https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=](https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=){api_key}"
     headers = {'Content-Type': 'application/json'}
     
     system_rules = (
         "You are WebMaster Pro, an elite software architect like Replit Agent. Build a fully functional system. "
-        "Output ALL required files wrapped strictly within XML format tags like this:\n"
-        "<file name=\"filename.ext\">\n...code...\n</file>\n"
-        "Produce fully operational, interactive files (e.g., index.html, style.css, script.js). "
-        "Do not write regular markdown blocks, conversation, or summaries outside the XML file wrappers."
+        "You MUST output ALL code inside XML format tags EXACTLY like this:\n"
+        "<file name=\"index.html\">\n...code...\n</file>\n"
+        "<file name=\"style.css\">\n...code...\n</file>\n"
+        "<file name=\"script.js\">\n...code...\n</file>\n"
+        "Produce fully operational code. Do not write regular markdown explanations outside the tags."
     )
     
-    # API માટેનું સિક્યોર પેલોડ સ્ટ્રક્ચર
     payload = {
         "contents": [{
             "parts": [{"text": f"{system_rules}\n\nBuild Request: {prompt}"}]
@@ -81,19 +79,38 @@ def build_application_backend(prompt, api_key):
             return res_json['candidates']['content']['parts']['text']
         else:
             error_msg = res_json.get('error', {}).get('message', 'Unknown API Error')
-            return f"❌ AI Engine Error ({response.status_code}): {error_msg}\nતમારી API Key બરાબર ચેક કરો."
+            return f"❌ AI Engine Error ({response.status_code}): {error_msg}"
     except Exception as e:
         return f"❌ Connection Error: {str(e)}"
 
+# 6. Advanced Smart Parser (ભૂલથી પણ એરર આવવા નહીં દે)
 def parse_incoming_file_tree(response_text):
+    # રીત ૧: સ્ટાન્ડર્ડ XML ટેગ ચેક કરશે double quotes સાથે
     pattern = r'<file\s+name="([^"]+)">([\s\S]*?)<\/file>'
     matches = re.findall(pattern, response_text)
+    
+    # રીત ૨: જો સિંગલ ક્વાટ્સ હોય તો તેના માટે ચેક કરશે
     if not matches:
         pattern = r"<file\s+name='([^']+)'>([\s\S]*?)<\/file>"
         matches = re.findall(pattern, response_text)
-    return {fname.strip(): content.strip() for fname, content in matches}
+        
+    # રીત ૩: સ્માર્ટ ફેસબેક (જો AI ટેગ બનાવવાનું ભૂલી જાય અને માત્ર માર્કડાઉન આપે)
+    if not matches:
+        files_dict = {}
+        html_match = re.search(r'```html([\s\S]*?)```', response_text)
+        css_match = re.search(r'```css([\s\S]*?)```', response_text)
+        js_match = re.search(r'```javascript([\s\S]*?)```', response_text) or re.search(r'```js([\s\S]*?)```', response_text)
+        
+        if html_match: files_dict["index.html"] = html_match.group(1).strip()
+        if css_match: files_dict["style.css"] = css_match.group(1).strip()
+        if js_match: files_dict["script.js"] = js_match.group(1).strip()
+        
+        if files_dict:
+            return files_dict
+            
+    return {fname.strip(): content.strip() for fname, content in matches} if matches else {}
 
-# 6. Main Split UI Dashboard Layout
+# 7. Main Split UI Dashboard Layout
 left_console, right_workspace = st.columns(2)
 
 with left_console:
@@ -140,7 +157,7 @@ with left_console:
                     st.toast("Application framework refreshed successfully!", icon="🎉")
                     st.rerun()
                 else:
-                    st.error("System Engine Notice: Parsing fallback initialized or Invalid API Key. See raw output:")
+                    st.error("Parsing Fallback Mode: AI આઉટપુટ ફોર્મેટ બદલાયું છે. કોડ નીચે પ્રમાણે છે:")
                     st.code(raw_response)
 
 with right_workspace:
@@ -181,15 +198,15 @@ with right_workspace:
         st.markdown("### 🖥️ Real-time Live Sandbox Preview")
         target_preview_file = "index.html" if "index.html" in st.session_state.project_files else file_map_list
         
-        if target_preview_file.endswith(".html"):
-            markup_code = st.session_state.project_files.get(target_preview_file, "")
+        if target_preview_file.endswith(".html") or target_preview_file == "index.html":
+            markup_code = st.session_state.project_files.get("index.html", "")
             css_style_code = st.session_state.project_files.get("style.css", "")
             javascript_code = st.session_state.project_files.get("script.js", "")
             
             integrated_web_html = f"<style>{css_style_code}</style>\n{markup_code}\n<script>{javascript_code}</script>"
             components.html(integrated_web_html, height=300, scrolling=True)
 
-# 7. Sidebar Registration & Login Controller
+# 8. Sidebar Registration & Login Controller
 st.sidebar.title("💻 WebMaster Panel")
 st.sidebar.caption("System Engine Status: Active")
 st.sidebar.markdown("---")
