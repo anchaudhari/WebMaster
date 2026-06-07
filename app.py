@@ -15,7 +15,7 @@ st.set_page_config(
 
 # 2. Hardcoded API Settings (તમારી સાચી Gemini 2.5 API Key અહીં નાખો)
 # -----------------------------------------------------------------------------
-USER_GEMINI_KEY = "AQ.Ab8RN6I217zugbkJs493Ek-oFQcMaGrCyfUD3YFjZOHv5QnyAA"
+USER_GEMINI_KEY = "AIzaSyA9zukoNhfF419sKDFifc3wrV4DacfoyoY"
 # -----------------------------------------------------------------------------
 
 # 3. Replit Dark Theme UI Styling
