@@ -13,11 +13,12 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# -----------------------------------------------------------------------------
-# BACKEND API HARDCODING (અહીં તમારી નવી ફ્રી કી પેસ્ટ કરો)
+# 2. Hardcoded API Settings (તમારી સાચી Gemini API Key અહીં નાખો)
 # -----------------------------------------------------------------------------
 USER_GEMINI_KEY = " AQ.Ab8RN6I217zugbkJs493Ek-oFQcMaGrCyfUD3YFjZOHv5QnyAA"
-MODEL_ENGINE_NAME = "gemini-1.5-flash"  # અહીં ૧.૫ ફ્લેશ સેટ કરી દીધું છે
+MODEL_ENGINE_NAME = "gemini-1.5-flash"  # ફ્રી અને સ્ટેબલ મોડેલ
+# -----------------------------------------------------------------------------
+
 # 3. Replit Dark Theme UI Styling
 st.markdown("""
     <style>
@@ -48,17 +49,16 @@ if "generated_apps_tracker" not in st.session_state: st.session_state.generated_
 if "is_logged_in" not in st.session_state: st.session_state.is_logged_in = False
 if "app_publish_status" not in st.session_state: st.session_state.app_publish_status = False
 
-# 5. Fixed REST API Engine (Connection Adapter Error Resolved)
+# 5. Dynamic REST API Engine (મોડેલ મુજબ ઓટોમેટિક URL ચેન્જ થશે)
 def build_application_backend(prompt, api_key):
-    # સિક્યોરલી કી માંથી કોઈ પણ અજાણતા સ્પેસ કે વધારાના અક્ષરો સાફ કરવા માટે (.strip())
     clean_key = str(api_key).strip()
+    clean_model = str(MODEL_ENGINE_NAME).strip()
     
-    if not clean_key or clean_key == "YOUR_GEMINI_2_5_API_KEY_HERE":
-        return "❌ WebMaster Configuration Notice: Please open app.py and enter your active Gemini 2.5 API Key on line 21."
+    if not clean_key or clean_key == "YOUR_GEMINI_API_KEY_HERE":
+        return "❌ WebMaster Configuration Notice: Please open app.py and enter your active Gemini API Key on line 21."
     
-    # URL ફોર્મેટને બિલકુલ પ્લેન પાયથોન સ્ટ્રિંગમાં ફિક્સ કર્યું છે
-    base_url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
-    full_url = f"{base_url}?key={clean_key}"
+    # FIXED: હવે URL તમે ઉપર સેટ કરેલા મોડેલ (gemini-1.5-flash) મુજબ ડાયનેમિકલી બનશે
+    full_url = f"https://generativelanguage.googleapis.com/v1beta/models/{clean_model}:generateContent?key={clean_key}"
     
     headers = {'Content-Type': 'application/json'}
     
@@ -85,7 +85,7 @@ def build_application_backend(prompt, api_key):
             return res_json['candidates']['content']['parts']['text']
         else:
             error_msg = res_json.get('error', {}).get('message', 'Unknown API Error')
-            return f"❌ AI Engine Error ({response.status_code}): {error_msg}"
+            return f"❌ AI Engine Error ({response.status_code}): {error_msg}\nતમારી API કી અને મોડેલનું નામ ચેક કરો."
     except Exception as e:
         return f"❌ HTTP Connection Error: {str(e)}"
 
@@ -135,95 +135,3 @@ with left_console:
     allow_compilation = True
     if st.session_state.generated_apps_tracker >= 1 and not st.session_state.is_logged_in:
         allow_compilation = False
-        st.markdown("""
-            <div style='background-color: #3b1414; padding: 15px; border-radius: 6px; border: 1px solid #ef4444; margin-top: 15px;'>
-            <p style='margin:0; color:#fca5a5; font-weight:bold;'>🛑 Free Sandbox Limit Reached</p>
-            <p style='margin:0; font-size:13px; color:#d1d5db;'>You have engineered 1 application sandbox. Please <b>Login</b> on the sidebar account system to continue creating architectures.</p>
-            </div>
-        """, unsafe_allow_html=True)
-
-    if trigger_build and user_prompt_input:
-        if not allow_compilation:
-            st.toast("Authorization token missing. Please sign in.", icon="🔒")
-        else:
-            with st.spinner("WebMaster AI Agent is creating code modules... 🛠️"):
-                raw_response = build_application_backend(user_prompt_input, USER_GEMINI_KEY)
-                extracted_files = parse_incoming_file_tree(raw_response)
-                
-                if extracted_files:
-                    st.session_state.project_files = extracted_files
-                    st.session_state.selected_file = list(extracted_files.keys())
-                    st.session_state.generated_apps_tracker += 1
-                    st.session_state.app_publish_status = False  
-                    st.toast("Application framework refreshed successfully!", icon="🎉")
-                    st.rerun()
-                else:
-                    st.error("Parsing Fallback Mode: AI આઉટપુટ લોડ થયું છે પરંતુ એક્સટ્રેક્ટ કરવામાં પ્રોબ્લેમ છે:")
-                    st.code(raw_response)
-
-with right_workspace:
-    st.markdown("### 🛠️ Workspace Repository & Deployment")
-    file_map_list = list(st.session_state.project_files.keys())
-    
-    if file_map_list:
-        active_tab_file = st.session_state.selected_file
-        if active_tab_file not in file_map_list: active_tab_file = file_map_list
-            
-        selected_file_tab = st.selectbox("📂 Project Repository File Explorer", options=file_map_list, index=file_map_list.index(active_tab_file))
-        st.session_state.selected_file = selected_file_tab
-        
-        live_content_code = st.session_state.project_files[selected_file_tab]
-        modified_code = st.text_area(label=f"Code Editor: {selected_file_tab}", value=live_content_code, height=220)
-        st.session_state.project_files[selected_file_tab] = modified_code
-        
-        act_col1, act_col2 = st.columns(2)
-        with act_col1:
-            zip_buffer_io = io.BytesIO()
-            with zipfile.ZipFile(zip_buffer_io, "w", zipfile.ZIP_DEFLATED) as packaged_zip:
-                for fname, fcontent in st.session_state.project_files.items(): packaged_zip.writestr(fname, fcontent)
-            st.download_button(label="📥 Export Build Project (.ZIP)", data=zip_buffer_io.getvalue(), file_name="webmaster_project.zip", mime="application/zip", use_container_width=True)
-            
-        with act_col2:
-            if st.button("🌐 Publish App to WebMaster Cloud", use_container_width=True):
-                st.session_state.app_publish_status = True
-                
-        if st.session_state.app_publish_status:
-            st.markdown("""
-                <div class='publish-box'>
-                <p style='margin:0; font-weight:bold;'>🚀 Application Published Successfully!</p>
-                <p style='margin:0; font-size:12px; color:#a7f3d0;'>Your live environment deployment is completed. Link is active on WebMaster cloud instances.</p>
-                </div>
-            """, unsafe_allow_html=True)
-
-        st.markdown("---")
-        st.markdown("### 🖥️ Real-time Live Sandbox Preview")
-        target_preview_file = "index.html" if "index.html" in st.session_state.project_files else file_map_list
-        
-        if target_preview_file.endswith(".html") or target_preview_file == "index.html":
-            markup_code = st.session_state.project_files.get("index.html", "")
-            css_style_code = st.session_state.project_files.get("style.css", "")
-            javascript_code = st.session_state.project_files.get("script.js", "")
-            
-            integrated_web_html = f"<style>{css_style_code}</style>\n{markup_code}\n<script>{javascript_code}</script>"
-            components.html(integrated_web_html, height=300, scrolling=True)
-
-# 8. Sidebar Registration & Login Controller
-st.sidebar.title("💻 WebMaster Panel")
-st.sidebar.caption("System Engine Status: Active")
-st.sidebar.markdown("---")
-
-if not st.session_state.is_logged_in:
-    st.sidebar.markdown("<div class='login-container'><p style='color:#ef4444; margin:0; font-weight:bold;'>🔒 Anonymous Mode Limit</p><p style='font-size:12px; color:#9ca3af; margin:0;'>1 Free build allocated. Login to unlock infinite builds.</p></div>", unsafe_allow_html=True)
-    user_id = st.sidebar.text_input("Username / Email", key="username_field")
-    user_pw = st.sidebar.text_input("Password", type="password", key="password_field")
-    if st.sidebar.button("Login & Unlock Pro Cloud", use_container_width=True):
-        if user_id and user_pw:
-            st.session_state.is_logged_in = True
-            st.rerun()
-else:
-    st.sidebar.markdown("<div style='background-color:#1e3a8a; padding:15px; border-radius:6px; border:1px solid #3b82f6;'><p style='color:#60a5fa; margin:0; font-weight:bold;'>🚀 Premium Workspace Unlocked</p></div>", unsafe_allow_html=True)
-    if st.sidebar.button("Disconnect Secure Session", use_container_width=True):
-        st.session_state.is_logged_in = False
-        st.session_state.generated_apps_tracker = 0
-        st.session_state.app_publish_status = False
-        st.rerun()
